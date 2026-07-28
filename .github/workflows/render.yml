@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       nome_video:
-        description: 'Nome do arquivo final'
+        description: 'Nome do arquivo final (ex: meu_video)'
         required: true
         default: 'video_15min'
 
@@ -42,21 +42,25 @@ jobs:
             exit 1
           fi
 
-          # 3. Converter o áudio previamente para MP3 limpo para evitar problemas de codec/M4A
+          # 3. Converter o áudio previamente para MP3 limpo
           echo "Normalizando áudio..."
           ffmpeg -y -i "$AUDIO_FILE" -ar 44100 -ac 2 -b:a 192k temp_audio.mp3
 
-          # 4. Renderizar o vídeo MP4 final
+          # 4. Remover extensão .mp4 se você digitar manualmente, para evitar duplicar em .mp4.mp4
+          NOME_PASTELA="${{ github.event.inputs.nome_video }}"
+          NOME_LIMPO="${NOME_PASTELA%.mp4}"
+
+          # 5. Renderizar o vídeo MP4 final garantindo o .mp4 no nome
           echo "Iniciando renderização do vídeo..."
           ffmpeg -y -loop 1 -i "$IMAGE_FILE" -i temp_audio.mp3 \
             -c:v libx264 -preset ultrafast -tune stillimage \
             -c:a copy \
             -pix_fmt yuv420p -shortest \
-            output/${{ github.event.inputs.nome_video }}.mp4
+            "output/${NOME_LIMPO}.mp4"
 
       - name: Disponibilizar Vídeo para Download
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.inputs.nome_video }}
+          name: video-renderizado
           path: output/*.mp4
           retention-days: 7
