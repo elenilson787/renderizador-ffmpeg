@@ -42,17 +42,18 @@ jobs:
             exit 1
           fi
 
-          # 3. Converter o áudio previamente para MP3 limpo
+          # 3. Normalizar áudio para MP3 limpo
           echo "Normalizando áudio..."
           ffmpeg -y -i "$AUDIO_FILE" -ar 44100 -ac 2 -b:a 192k temp_audio.mp3
 
-          # 4. Remover extensão .mp4 se você digitar manualmente, para evitar duplicar em .mp4.mp4
+          # 4. Tratar o nome do arquivo final
           NOME_PASTELA="${{ github.event.inputs.nome_video }}"
           NOME_LIMPO="${NOME_PASTELA%.mp4}"
 
-          # 5. Renderizar o vídeo MP4 final garantindo o .mp4 no nome
+          # 5. Renderizar forçando dimensões pares (-vf "crop=trunc(iw/2)*2:trunc(ih/2)*2")
           echo "Iniciando renderização do vídeo..."
           ffmpeg -y -loop 1 -i "$IMAGE_FILE" -i temp_audio.mp3 \
+            -vf "crop=trunc(iw/2)*2:trunc(ih/2)*2" \
             -c:v libx264 -preset ultrafast -tune stillimage \
             -c:a copy \
             -pix_fmt yuv420p -shortest \
