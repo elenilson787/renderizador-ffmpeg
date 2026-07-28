@@ -26,13 +26,22 @@ jobs:
 
       - name: Executar Renderização FFmpeg
         run: |
-          # DICA: Use -preset superfast para renderizar vídeos de 10-15min rapidamente
-          # Substitua os arquivos de entrada (assets/...) pelos seus arquivos reais
+          echo "Buscando arquivos na pasta assets..."
           
-          echo "Iniciando processamento do vídeo..."
-          
-          # Exemplo de comando FFmpeg otimizado:
-          ffmpeg -y -loop 1 -i assets/fundo.jpg -i assets/audio.mp3 \
+          # Detecta automaticamente se o audio é mp3, m4a ou outro formato na pasta assets
+          AUDIO_FILE=$(ls assets/áudio* assets/audio* 2>/dev/null | head -n 1)
+          IMAGE_FILE=$(ls assets/fundo* 2>/dev/null | head -n 1)
+
+          echo "Imagem encontrada: $IMAGE_FILE"
+          echo "Áudio encontrado: $AUDIO_FILE"
+
+          if [ -z "$AUDIO_FILE" ] || [ -z "$IMAGE_FILE" ]; then
+            echo "Erro: Imagem ou Áudio não encontrados na pasta assets!"
+            exit 1
+          fi
+
+          # Executa a renderização com compatibilidade universal de áudio/vídeo
+          ffmpeg -y -loop 1 -i "$IMAGE_FILE" -i "$AUDIO_FILE" \
             -c:v libx264 -preset superfast -tune stillimage \
             -c:a aac -b:a 192k \
             -pix_fmt yuv420p -shortest \
