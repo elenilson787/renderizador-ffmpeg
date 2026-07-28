@@ -1,0 +1,46 @@
+name: Renderizar Vídeo Longo (FFmpeg)
+
+on:
+  workflow_dispatch:
+    inputs:
+      nome_video:
+        description: 'Nome do arquivo final (sem espaço)'
+        required: true
+        default: 'video_15min'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar arquivos do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Criar pasta de saída
+        run: mkdir -p output
+
+      - name: Executar Renderização FFmpeg
+        run: |
+          # DICA: Use -preset superfast para renderizar vídeos de 10-15min rapidamente
+          # Substitua os arquivos de entrada (assets/...) pelos seus arquivos reais
+          
+          echo "Iniciando processamento do vídeo..."
+          
+          # Exemplo de comando FFmpeg otimizado:
+          ffmpeg -y -loop 1 -i assets/fundo.jpg -i assets/audio.mp3 \
+            -c:v libx264 -preset superfast -tune stillimage \
+            -c:a aac -b:a 192k \
+            -pix_fmt yuv420p -shortest \
+            output/${{ github.event.inputs.nome_video }}.mp4
+
+      - name: Disponibilizar Vídeo para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.nome_video }}
+          path: output/*.mp4
+          retention-days: 7
