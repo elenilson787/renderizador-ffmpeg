@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       nome_video:
-        description: 'Nome do arquivo final (sem espaço)'
+        description: 'Nome do arquivo final'
         required: true
         default: 'video_15min'
 
@@ -24,26 +24,33 @@ jobs:
       - name: Criar pasta de saída
         run: mkdir -p output
 
-      - name: Executar Renderização FFmpeg
+      - name: Executar Renderização Inteligente
         run: |
-          echo "Buscando arquivos na pasta assets..."
+          # 1. Encontrar a imagem na pasta assets
+          IMAGE_FILE=$(find assets/ -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" \) | head -n 1)
           
-          # Detecta automaticamente se o audio é mp3, m4a ou outro formato na pasta assets
-          AUDIO_FILE=$(ls assets/áudio* assets/audio* 2>/dev/null | head -n 1)
-          IMAGE_FILE=$(ls assets/fundo* 2>/dev/null | head -n 1)
+          # 2. Encontrar o áudio na pasta assets
+          AUDIO_FILE=$(find assets/ -type f \( -name "*.mp3" -o -name "*.m4a" -o -name "*.wav" \) | head -n 1)
 
-          echo "Imagem encontrada: $IMAGE_FILE"
-          echo "Áudio encontrado: $AUDIO_FILE"
+          echo "----------------------------------------"
+          echo "Imagem selecionada: $IMAGE_FILE"
+          echo "Áudio selecionado: $AUDIO_FILE"
+          echo "----------------------------------------"
 
-          if [ -z "$AUDIO_FILE" ] || [ -z "$IMAGE_FILE" ]; then
+          if [ -z "$IMAGE_FILE" ] || [ -z "$AUDIO_FILE" ]; then
             echo "Erro: Imagem ou Áudio não encontrados na pasta assets!"
             exit 1
           fi
 
-          # Executa a renderização com compatibilidade universal de áudio/vídeo
-          ffmpeg -y -loop 1 -i "$IMAGE_FILE" -i "$AUDIO_FILE" \
-            -c:v libx264 -preset superfast -tune stillimage \
-            -c:a aac -b:a 192k \
+          # 3. Converter o áudio previamente para MP3 limpo para evitar problemas de codec/M4A
+          echo "Normalizando áudio..."
+          ffmpeg -y -i "$AUDIO_FILE" -ar 44100 -ac 2 -b:a 192k temp_audio.mp3
+
+          # 4. Renderizar o vídeo MP4 final
+          echo "Iniciando renderização do vídeo..."
+          ffmpeg -y -loop 1 -i "$IMAGE_FILE" -i temp_audio.mp3 \
+            -c:v libx264 -preset ultrafast -tune stillimage \
+            -c:a copy \
             -pix_fmt yuv420p -shortest \
             output/${{ github.event.inputs.nome_video }}.mp4
 
