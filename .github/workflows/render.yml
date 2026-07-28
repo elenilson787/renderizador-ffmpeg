@@ -16,10 +16,10 @@ jobs:
       - name: Baixar arquivos do repositório
         uses: actions/checkout@v4
 
-      - name: Instalar FFmpeg
+      - name: Instalar FFmpeg e Rclone
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg rclone
 
       - name: Criar pastas temporárias
         run: mkdir -p output temp_clips
@@ -91,9 +91,30 @@ jobs:
             -c:v copy -c:a copy \
             -shortest -fflags +genpts "output/${NOME_LIMPO}.mp4"
 
-      - name: Disponibilizar Vídeo para Download
+      - name: Disponibilizar Vídeo para Download no GitHub
         uses: actions/upload-artifact@v4
         with:
           name: video-renderizado
           path: output/*.mp4
           retention-days: 7
+
+      - name: Enviar Vídeo para o Google Drive
+        env:
+          GDRIVE_SA_JSON: ${{ secrets.GDRIVE_SA_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          # 1. Salva a chave JSON em um arquivo temporário
+          echo "$GDRIVE_SA_JSON" > sa.json
+
+          # 2. Configura o Rclone para conectar via Conta de Serviço
+          mkdir -p ~/.config/rclone
+          cat <<EOF > ~/.config/rclone/rclone.conf
+          [gdrive]
+          type = drive
+          scope = drive
+          service_account_file = sa.json
+          root_folder_id = $GDRIVE_FOLDER_ID
+          EOF
+
+          # 3. Faz o upload de todos os vídeos renderizados na pasta output/
+          rclone copy output/ gdrive: --verbose
