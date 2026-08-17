@@ -22,10 +22,11 @@ jobs:
         run: pip install requests pandas
 
       - name: Fetch Trending Products
-        env:
-          CHOPPY_APP_ID: ${{ secrets.CHOPPY_APP_ID }}
-          CHOPPY_APP_SECRET: ${{ secrets.CHOPPY_APP_SECRET }}
-        run: python - <<'EOF'
+      - name: Fetch Trending Products
+  env:
+    CHOPPY_APP_ID: ${{ secrets.CHOPPY_APP_ID }}
+    CHOPPY_APP_SECRET: ${{ secrets.CHOPPY_APP_SECRET }}
+  run: python - <<'EOF'
 import os, requests, pandas as pd, hashlib, time
 
 APP_ID = os.environ["CHOPPY_APP_ID"]
