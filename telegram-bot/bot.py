@@ -7,7 +7,7 @@ from flask import Flask, request
 app = Flask(__name__)
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
-GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
+GITHUB_TOKEN = os.environ["MY_GITHUB_TOKEN"]
 REPO = "elenilson787/renderizador-ffmpeg"   # substitua pelo seu repositório
 WORKFLOW = "choppy-trending.yml"  # nome do workflow
 
