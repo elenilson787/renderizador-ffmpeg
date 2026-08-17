@@ -1,0 +1,45 @@
+name: Choppy Trending Products
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # Executa todo dia às 7h UTC
+  workflow_dispatch:       # Permite rodar manualmente
+
+jobs:
+  trending-products:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests pandas
+
+      - name: Fetch Trending Products
+        env:
+          CHOPPY_API_KEY: ${{ secrets.CHOPPY_API_KEY }}
+        run: |
+          import os, requests, pandas as pd
+          url = "https://api.choppy.com/affiliate/trending"
+          headers = {"Authorization": f"Bearer {os.environ['CHOPPY_API_KEY']}"}
+          params = {"limit": 20, "sort": "commission"}
+          r = requests.get(url, headers=headers, params=params)
+          data = r.json()
+
+          df = pd.DataFrame(data["products"])
+          df = df[["name","price","commission_rate","affiliate_link"]]
+          df.to_csv("trending_products.csv", index=False)
+
+      - name: Commit trending list
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add trending_products.csv
+          git commit -m "Daily trending products list"
+          git push
