@@ -21,7 +21,7 @@ def send_message(chat_id, text):
 def fetch_trending_products():
     timestamp = int(time.time())
     sign = hashlib.sha256(f"{CHOPPY_APP_ID}{CHOPPY_APP_SECRET}{timestamp}".encode()).hexdigest()
-    url = "https://api.choppy.com/affiliate/trending"
+    url = "https://api.shopee.com/affiliate/trending"
     headers = {"Authorization": f"{CHOPPY_APP_ID}:{sign}:{timestamp}"}
     params = {"limit": 10, "sort": "commission"}
     r = requests.get(url, headers=headers, params=params)
