@@ -25,24 +25,25 @@ jobs:
         env:
           CHOPPY_APP_ID: ${{ secrets.CHOPPY_APP_ID }}
           CHOPPY_APP_SECRET: ${{ secrets.CHOPPY_APP_SECRET }}
-        run: |
-          import os, requests, pandas as pd, hashlib, time
+        run: python - <<'EOF'
+import os, requests, pandas as pd, hashlib, time
 
-          APP_ID = os.environ["CHOPPY_APP_ID"]
-          APP_SECRET = os.environ["CHOPPY_APP_SECRET"]
+APP_ID = os.environ["CHOPPY_APP_ID"]
+APP_SECRET = os.environ["CHOPPY_APP_SECRET"]
 
-          timestamp = int(time.time())
-          sign = hashlib.sha256(f"{APP_ID}{APP_SECRET}{timestamp}".encode()).hexdigest()
+timestamp = int(time.time())
+sign = hashlib.sha256(f"{APP_ID}{APP_SECRET}{timestamp}".encode()).hexdigest()
 
-          url = "https://api.shopee.com/affiliate/trending"
-          headers = {"Authorization": f"{APP_ID}:{sign}:{timestamp}"}
-          params = {"limit": 20, "sort": "commission"}
-          r = requests.get(url, headers=headers, params=params)
-          data = r.json()
+url = "https://api.shopee.com/affiliate/trending"
+headers = {"Authorization": f"{APP_ID}:{sign}:{timestamp}"}
+params = {"limit": 20, "sort": "commission"}
+r = requests.get(url, headers=headers, params=params)
+data = r.json()
 
-          df = pd.DataFrame(data["products"])
-          df = df[["name","price","commission_rate","affiliate_link"]]
-          df.to_csv("trending_products.csv", index=False)
+df = pd.DataFrame(data["products"])
+df = df[["name","price","commission_rate","affiliate_link"]]
+df.to_csv("trending_products.csv", index=False)
+EOF
 
       - name: Commit trending list
         run: |
@@ -72,15 +73,18 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          import os, requests, pandas as pd
-          df = pd.read_csv("trending_products.csv")
-          text = "📊 *Produtos em alta hoje:*\n\n"
-          for _, p in df.iterrows():
-              text += f"🔥 {p['name']} - R${p['price']} | Comissão {p['commission_rate']}%\n{p['affiliate_link']}\n\n"
-          url = f"https://api.telegram.org/bot{os.environ['TELEGRAM_TOKEN']}/sendMessage"
-          requests.post(url, data={
-              "chat_id": os.environ['TELEGRAM_CHAT_ID'],
-              "text": text,
-              "parse_mode": "Markdown"
-          })
+        run: python - <<'EOF'
+import os, requests, pandas as pd
+
+df = pd.read_csv("trending_products.csv")
+text = "📊 *Produtos em alta hoje:*\n\n"
+for _, p in df.iterrows():
+    text += f"🔥 {p['name']} - R${p['price']} | Comissão {p['commission_rate']}%\n{p['affiliate_link']}\n\n"
+
+url = f"https://api.telegram.org/bot{os.environ['TELEGRAM_TOKEN']}/sendMessage"
+requests.post(url, data={
+    "chat_id": os.environ['TELEGRAM_CHAT_ID'],
+    "text": text,
+    "parse_mode": "Markdown"
+})
+EOF
